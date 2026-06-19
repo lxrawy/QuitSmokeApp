@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>戒烟助手 - SmokeFree</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --pink-50: #FFF0F3; --pink-100: #FFE0E8; --pink-200: #FFB3C6;
+    --pink-300: #FF8BA7; --pink-400: #FF6090; --pink-500: #FF3672;
+    --pink-600: #E91E63; --pink-700: #C4185A; --pink-800: #9C1248;
+    --pink-900: #750D36; --pink-bg: #FFF8FA;
+    --white: #FFFFFF; --gray-50: #F9FAFB; --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB; --gray-300: #D1D5DB; --gray-400: #9CA3AF;
+    --gray-500: #6B7280; --gray-600: #4B5563; --gray-700: #374151;
+    --green-400: #4ADE80; --green-500: #22C55E; --green-600: #16A34A;
+    --red-400: #F87171; --red-500: #EF4444;
+    --wechat-green: #07C160; --blue-500: #3B82F6;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: var(--pink-bg); color: var(--gray-700); min-height: 100vh;
+    display: flex; justify-content: center; padding: 20px;
+  }
+  .phone-mockup {
+    width: 100%; max-width: 400px; background: var(--white);
+    border-radius: 32px; box-shadow: 0 20px 60px rgba(255,54,114,0.15), 0 0 0 1px rgba(255,176,198,0.3);
+    overflow: hidden; position: relative; min-height: 90vh;
+  }
+
+  /* ==================== LOGIN OVERLAY ==================== */
+  .login-overlay {
+    position: absolute; inset: 0; background: var(--white); z-index: 300;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px 28px; overflow-y: auto;
+    transition: opacity 0.3s;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-logo {
+    width: 80px; height: 80px; background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+    border-radius: 24px; display: flex; align-items: center; justify-content: center;
+    font-size: 40px; margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(255,54,114,0.25);
+  }
+  .login-title { font-size: 24px; font-weight: 700; color: var(--gray-700); margin-bottom: 6px; }
+  .login-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 36px; }
+  .login-tabs { display: flex; background: var(--pink-100); border-radius: 12px; padding: 4px; margin-bottom: 24px; width: 100%; }
+  .login-tab {
+    flex: 1; text-align: center; padding: 10px; border-radius: 10px;
+    font-size: 14px; font-weight: 500; color: var(--gray-500);
+    cursor: pointer; transition: all 0.25s; user-select: none;
+  }
+  .login-tab.active { background: white; color: var(--pink-600); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .login-form { width: 100%; }
+  .login-form .form-group { margin-bottom: 16px; }
+  .login-form .form-label { font-size: 13px; font-weight: 500; color: var(--gray-600); margin-bottom: 6px; display: block; }
+  .login-form .form-input {
+    width: 100%; padding: 14px 16px; border: 1.5px solid var(--pink-200);
+    border-radius: 14px; font-size: 15px; color: var(--gray-700); background: var(--white);
+    outline: none; transition: border-color 0.2s;
+  }
+  .login-form .form-input:focus { border-color: var(--pink-500); }
+  .sms-row { display: flex; gap: 10px; }
+  .sms-row .form-input { flex: 1; }
+  .sms-btn {
+    padding: 14px 16px; background: var(--pink-50); border: 1.5px solid var(--pink-200);
+    border-radius: 14px; font-size: 13px; font-weight: 600; color: var(--pink-600);
+    cursor: pointer; white-space: nowrap; transition: all 0.2s; user-select: none; min-width: 110px; text-align: center;
+  }
+  .sms-btn:active { background: var(--pink-100); }
+  .sms-btn.disabled { color: var(--gray-400); border-color: var(--gray-300); background: var(--gray-100); cursor: default; }
+  .login-btn {
+    width: 100%; padding: 16px; background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+    color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-top: 8px; box-shadow: 0 4px 16px rgba(255,54,114,0.3); transition: transform 0.15s;
+  }
+  .login-btn:active { transform: scale(0.98); }
+  .wechat-btn {
+    width: 100%; padding: 16px; background: var(--wechat-green); color: white; border: none;
+    border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 0;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 16px rgba(7,193,96,0.25); transition: transform 0.15s;
+  }
+  .wechat-btn:active { transform: scale(0.98); }
+  .login-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; width: 100%; }
+  .login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: var(--pink-200); }
+  .login-divider span { font-size: 12px; color: var(--gray-400); white-space: nowrap; }
+
+  /* ==================== MAIN APP ==================== */
+  .main-app { display: block; }
+
+  /* Status Bar */
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 24px 8px; font-size: 14px; font-weight: 600; color: var(--gray-700);
+  }
+  .status-bar .time { font-weight: 700; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+
+  /* Header */
+  .app-header {
+    background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+    padding: 20px 24px 28px; color: white; position: relative;
+  }
+  .app-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .app-header p { font-size: 13px; opacity: 0.9; }
+  .header-stats { display: flex; gap: 16px; margin-top: 16px; }
+  .header-stat {
+    background: rgba(255,255,255,0.2); border-radius: 12px; padding: 10px 14px; flex: 1;
+    backdrop-filter: blur(10px);
+  }
+  .header-stat .num { font-size: 20px; font-weight: 700; }
+  .header-stat .label { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+  /* Page Content */
+  .page-content { display: none; padding: 20px 20px 100px; animation: fadeIn 0.3s ease; }
+  .page-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Cards */
+  .card {
+    background: var(--white); border-radius: 16px; padding: 18px;
+    margin-bottom: 14px; border: 1px solid var(--pink-100);
+    box-shadow: 0 2px 12px rgba(255,54,114,0.06);
+  }
+  .card-title {
+    font-size: 15px; font-weight: 600; color: var(--gray-700);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+  /* Form Elements */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; font-weight: 500; color: var(--gray-600); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--pink-200);
+    border-radius: 12px; font-size: 15px; color: var(--gray-700); background: var(--pink-50);
+    transition: border-color 0.2s; outline: none;
+  }
+  .form-input:focus { border-color: var(--pink-500); background: white; }
+  .form-input::placeholder { color: var(--gray-400); }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%; padding: 14px; background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+    color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(255,54,114,0.3);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary {
+    width: 100%; padding: 12px; background: var(--pink-50); color: var(--pink-600);
+    border: 1.5px solid var(--pink-200); border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+
+  /* Stats Grid */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box { background: var(--pink-50); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-box .value { font-size: 22px; font-weight: 700; color: var(--pink-700); }
+  .stat-box .unit { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+  .stat-box .desc { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+  /* History Table */
+  .history-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+  .history-table th {
+    background: var(--pink-50); color: var(--pink-700); font-weight: 600;
+    padding: 10px 8px; text-align: center; border-bottom: 1.5px solid var(--pink-200); font-size: 12px;
+  }
+  .history-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid var(--pink-100); color: var(--gray-600); }
+  .history-table tr:last-child td { border-bottom: none; }
+  .smoke-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-high { background: #FEE2E2; color: var(--red-500); }
+  .badge-mid { background: #FEF3C7; color: #D97706; }
+  .badge-low { background: #D1FAE5; color: var(--green-600); }
+
+  /* Motivation Card */
+  .motivation-card {
+    background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+    border-radius: 16px; padding: 20px; color: white; text-align: center; margin-bottom: 14px;
+  }
+  .motivation-card .quote { font-size: 16px; font-weight: 600; line-height: 1.5; }
+  .motivation-card .sub { font-size: 12px; opacity: 0.8; margin-top: 8px; }
+
+  /* Notification Simulation */
+  .notif-bubble {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 360px; background: white; border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15); padding: 16px; z-index: 100;
+    display: none; border: 1px solid var(--pink-200); animation: slideDown 0.4s ease;
+  }
+  .notif-bubble.show { display: block; }
+  @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  .notif-title { font-weight: 600; font-size: 14px; color: var(--pink-600); margin-bottom: 6px; }
+  .notif-body { font-size: 13px; color: var(--gray-600); margin-bottom: 12px; }
+  .notif-input {
+    width: 80px; padding: 8px 12px; border: 1.5px solid var(--pink-200);
+    border-radius: 10px; text-align: center; font-size: 18px; font-weight: 600;
+    color: var(--pink-600); margin: 0 auto 12px; display: block;
+  }
+  .notif-btns { display: flex; gap: 10px; }
+  .notif-btns button { flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .notif-confirm { background: var(--pink-500); color: white; }
+  .notif-cancel { background: var(--gray-100); color: var(--gray-600); }
+
+  /* Encouragement Popup */
+  .encourage-popup {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+    animation: fadeInBg 0.3s ease;
+  }
+  .encourage-popup.show { display: flex; }
+  @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+  .encourage-content {
+    background: white; border-radius: 24px; padding: 32px 24px; text-align: center;
+    max-width: 320px; width: 90%; animation: popIn 0.4s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .encourage-emoji { font-size: 48px; margin-bottom: 12px; }
+  .encourage-text { font-size: 16px; font-weight: 600; color: var(--pink-700); line-height: 1.5; }
+  .encourage-sub { font-size: 13px; color: var(--gray-500); margin-top: 8px; }
+  .encourage-close { margin-top: 20px; padding: 10px 32px; background: linear-gradient(135deg, var(--pink-400), var(--pink-600)); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; }
+
+  /* Timer Setting */
+  .timer-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .timer-opt {
+    padding: 12px; border: 1.5px solid var(--pink-200); border-radius: 12px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: var(--pink-50);
+    font-size: 13px; color: var(--gray-600);
+  }
+  .timer-opt.selected { border-color: var(--pink-500); background: var(--pink-100); color: var(--pink-700); font-weight: 600; }
+  .timer-opt .timer-val { font-size: 18px; font-weight: 700; }
+
+  /* Day Counter */
+  .day-counter {
+    text-align: center; padding: 20px; background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+    border-radius: 16px; color: white; margin-bottom: 14px;
+  }
+  .day-counter .days { font-size: 48px; font-weight: 800; line-height: 1; }
+  .day-counter .label { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+
+  /* Achievement */
+  .achievement { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--pink-50); border-radius: 12px; margin-bottom: 8px; }
+  .achievement .icon { font-size: 28px; }
+  .achievement .info { flex: 1; }
+  .achievement .name { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  .achievement .desc { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+  /* Bar Chart */
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 0 4px; }
+  .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; max-width: 24px; border-radius: 4px 4px 0 0; transition: height 0.5s ease; }
+  .bar-label { font-size: 10px; color: var(--gray-400); margin-top: 4px; text-align: center; }
+
+  /* Progress Bar (Goal) */
+  .progress-bar-wrap { width: 100%; height: 18px; background: var(--pink-100); border-radius: 10px; overflow: hidden; margin: 12px 0; position: relative; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--pink-400), var(--pink-600)); border-radius: 10px; transition: width 0.6s ease; min-width: 0%; }
+  .progress-bar-fill.complete { background: linear-gradient(90deg, var(--green-400), var(--green-500)); }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--gray-600); margin-top: 6px; }
+  .progress-labels .saved { font-weight: 700; color: var(--pink-600); }
+  .progress-labels .remain { font-weight: 700; color: var(--gray-500); }
+  .goal-card { background: linear-gradient(135deg, var(--pink-50), var(--white)); border: 1.5px solid var(--pink-200); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+  .goal-card .goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .goal-card .goal-name { font-size: 16px; font-weight: 700; color: var(--pink-700); }
+  .goal-card .goal-edit { font-size: 12px; color: var(--pink-500); cursor: pointer; background: none; border: none; font-weight: 600; }
+  .goal-card .goal-target { font-size: 13px; color: var(--gray-500); margin-bottom: 4px; }
+  .goal-congrats {
+    background: linear-gradient(135deg, var(--green-400), var(--green-500)); color: white;
+    border-radius: 12px; padding: 14px; text-align: center; font-weight: 600; font-size: 15px;
+    margin-bottom: 14px; display: none;
+  }
+  .goal-congrats.show { display: block; }
+  .goal-form { background: var(--pink-50); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .goal-form .form-group { margin-bottom: 12px; }
+  .goal-form .form-label { font-size: 12px; }
+  .goal-form .form-input { padding: 10px 12px; font-size: 14px; }
+
+  /* Health recovery timeline */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 4px; bottom: 4px; width: 2px; background: var(--pink-200); }
+  .timeline-item { position: relative; margin-bottom: 14px; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -20px; top: 4px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--pink-500); border: 2px solid white;
+  }
+  .timeline-time { font-size: 11px; color: var(--pink-600); font-weight: 600; }
+  .timeline-text { font-size: 13px; color: var(--gray-600); margin-top: 2px; }
+
+  /* Bottom Navigation Bar */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0; background: var(--white);
+    border-top: 1px solid var(--pink-100); display: flex; z-index: 20;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .nav-item {
+    flex: 1; text-align: center; padding: 10px 0 8px; cursor: pointer;
+    transition: all 0.2s; user-select: none; position: relative;
+  }
+  .nav-item .nav-icon { font-size: 22px; margin-bottom: 2px; display: block; transition: transform 0.2s; }
+  .nav-item .nav-label { font-size: 10px; color: var(--gray-400); font-weight: 500; transition: color 0.2s; }
+  .nav-item.active .nav-label { color: var(--pink-600); font-weight: 600; }
+  .nav-item.active .nav-icon { transform: scale(1.15); }
+  .nav-item::after {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 3px; background: transparent; border-radius: 0 0 3px 3px; transition: background 0.2s;
+  }
+  .nav-item.active::after { background: var(--pink-500); }
+
+  .page-content { padding-bottom: 80px !important; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--gray-700); color: white; padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.3s; z-index: 50;
+    white-space: nowrap; max-width: 90%; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ==================== ME PAGE ==================== */
+  .me-header {
+    background: linear-gradient(135deg, var(--pink-400), var(--pink-700));
+    padding: 32px 24px 28px; color: white; position: relative;
+  }
+  .me-user-row {
+    display: flex; align-items: center; gap: 14px; cursor: pointer;
+  }
+  .me-avatar {
+    width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center; font-size: 32px;
+    border: 2px solid rgba(255,255,255,0.5);
+  }
+  .me-user-info { flex: 1; }
+  .me-user-name { font-size: 18px; font-weight: 700; }
+  .me-user-desc { font-size: 12px; opacity: 0.85; margin-top: 3px; }
+  .me-arrow { font-size: 18px; opacity: 0.7; }
+
+  .me-login-prompt {
+    display: flex; align-items: center; gap: 14px; cursor: pointer;
+  }
+  .me-login-btn {
+    flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 14px; color: white; font-size: 15px; font-weight: 600; text-align: center;
+    backdrop-filter: blur(10px); cursor: pointer; transition: background 0.2s;
+  }
+  .me-login-btn:active { background: rgba(255,255,255,0.35); }
+
+  .me-section-title {
+    font-size: 12px; font-weight: 600; color: var(--gray-400); padding: 16px 0 8px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .me-cell {
+    display: flex; align-items: center; gap: 12px; padding: 14px 0;
+    border-bottom: 1px solid var(--pink-100); cursor: pointer; transition: background 0.15s;
+  }
+  .me-cell:last-child { border-bottom: none; }
+  .me-cell-icon {
+    width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .me-cell-text { flex: 1; font-size: 14px; color: var(--gray-700); }
+  .me-cell-desc { font-size: 12px; color: var(--gray-400); }
+  .me-cell-arrow { font-size: 14px; color: var(--gray-300); }
+
+  /* ==================== ACCOUNT PAGE ==================== */
+  .account-page {
+    position: absolute; inset: 0; background: var(--white); z-index: 100;
+    display: none; flex-direction: column;
+  }
+  .account-page.show { display: flex; }
+  .account-header {
+    display: flex; align-items: center; gap: 14px; padding: 20px 20px 18px;
+    border-bottom: 1px solid var(--pink-100);
+  }
+  .account-back {
+    font-size: 20px; cursor: pointer; color: var(--gray-500); padding: 4px;
+    background: none; border: none;
+  }
+  .account-header-title { font-size: 17px; font-weight: 700; color: var(--gray-700); }
+  .account-body { flex: 1; overflow-y: auto; padding: 0 20px 100px; }
+  .account-avatar-section {
+    display: flex; flex-direction: column; align-items: center; padding: 28px 0 20px;
+  }
+  .account-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+    display: flex; align-items: center; justify-content: center; font-size: 40px;
+    color: white; margin-bottom: 10px; box-shadow: 0 4px 16px rgba(255,54,114,0.3);
+  }
+  .account-username { font-size: 18px; font-weight: 700; color: var(--gray-700); }
+  .account-login-type { font-size: 12px; color: var(--gray-400); margin-top: 3px; }
+
+  .account-section-title {
+    font-size: 12px; font-weight: 600; color: var(--gray-400); margin: 20px 0 8px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .account-cell {
+    display: flex; align-items: center; gap: 12px; padding: 14px 0;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .account-cell:last-child { border-bottom: none; }
+  .account-cell-icon {
+    width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .account-cell-info { flex: 1; }
+  .account-cell-label { font-size: 14px; color: var(--gray-700); }
+  .account-cell-value { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+  .account-cell-action {
+    font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 12px;
+    border-radius: 8px; border: none; transition: background 0.15s;
+  }
+  .account-cell-action.bind { background: var(--pink-50); color: var(--pink-600); }
+  .account-cell-action.bound { background: var(--gray-100); color: var(--gray-400); cursor: default; }
+
+  .account-logout-btn {
+    width: 100%; padding: 14px; background: var(--gray-100); color: var(--red-500);
+    border: none; border-radius: 14px; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 24px; transition: background 0.15s;
+  }
+  .account-logout-btn:active { background: #FEE2E2; }
+
+  /* ==================== SETTINGS INSIDE ME PAGE ==================== */
+  .settings-section { margin-top: 4px; }
+
+  /* Force Login Modal */
+  .force-login-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 250; animation: fadeInBg 0.3s ease;
+  }
+  .force-login-modal.show { display: flex; }
+  .force-login-content {
+    background: white; border-radius: 24px; padding: 28px 24px; text-align: center;
+    max-width: 320px; width: 90%; animation: popIn 0.4s ease;
+  }
+  .force-login-emoji { font-size: 48px; margin-bottom: 12px; }
+  .force-login-title { font-size: 17px; font-weight: 700; color: var(--gray-700); margin-bottom: 8px; }
+  .force-login-desc { font-size: 13px; color: var(--gray-500); line-height: 1.6; margin-bottom: 20px; }
+  .force-login-btns { display: flex; gap: 10px; }
+  .force-login-btns button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .force-login-go { background: linear-gradient(135deg, var(--pink-400), var(--pink-600)); color: white; }
+  .force-login-cancel { background: var(--gray-100); color: var(--gray-500); }
+
+  ::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<!-- ==================== MAIN APP (always visible by default) ==================== -->
+<div class="phone-mockup">
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time" id="currentTime">9:41</span>
+    <span class="icons">📶 📡 🔋</span>
+  </div>
+
+  <!-- ==================== APP HEADER (dynamic) ==================== -->
+  <div class="app-header" id="appHeader">
+    <h1>🚭 戒烟助手</h1>
+    <p>每一次坚持，都是给自己最好的礼物</p>
+    <div class="header-stats">
+      <div class="header-stat">
+        <div class="num" id="headerDays">0</div>
+        <div class="label">坚持天数</div>
+      </div>
+      <div class="header-stat">
+        <div class="num" id="headerMoney">¥0</div>
+        <div class="label">已省下</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HOME PAGE ==================== -->
+  <div class="page-content active" id="page-home">
+    <div class="day-counter">
+      <div class="days" id="homeDays">0</div>
+      <div class="label">天 · 已成功远离香烟</div>
+    </div>
+
+    <div class="motivation-card">
+      <div class="quote" id="motivationText">「种一棵树最好的时间是十年前，其次是现在。」</div>
+      <div class="sub">继续加油，你可以的！💪</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: var(--pink-100);">📅</span>
+        今日情况
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="value" id="todaySmoked">0</div>
+          <div class="unit">支</div>
+          <div class="desc">今日已吸</div>
+        </div>
+        <div class="stat-box">
+          <div class="value" id="todayWasted">¥0</div>
+          <div class="unit">元</div>
+          <div class="desc">今日花费</div>
+        </div>
+        <div class="stat-box">
+          <div class="value" id="totalSaved">¥0</div>
+          <div class="unit">元</div>
+          <div class="desc">累计节省</div>
+        </div>
+        <div class="stat-box">
+          <div class="value" id="healthScore">0%</div>
+          <div class="unit">恢复</div>
+          <div class="desc">健康指数</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: #D1FAE5;">💚</span>
+        身体恢复进度
+      </div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-time">20分钟后</div>
+          <div class="timeline-text">心率和血压恢复正常</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">12小时</div>
+          <div class="timeline-text">血液中的一氧化碳降至正常</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">2-3周</div>
+          <div class="timeline-text">循环系统改善，肺功能增强</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">1-9个月</div>
+          <div class="timeline-text">咳嗽和气短情况减少</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">1年</div>
+          <div class="timeline-text">冠心病风险降低50%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: var(--pink-100);">✍️</span>
+        随时记录
+      </div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">刚才有吸烟吗？记录一下吧</p>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-primary" style="flex:1;padding:12px;font-size:14px;" onclick="quickRecord(0)">✅ 没有，坚持住了！</button>
+        <button class="btn-secondary" style="flex:1;" onclick="quickRecordPrompt()">😔 没忍住…</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HISTORY PAGE ==================== -->
+  <div class="page-content" id="page-history">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: var(--pink-100);">📋</span>
+        吸烟历史总结
+      </div>
+      <div id="historySummary" style="display:none;">
+        <div class="stats-grid" style="margin-bottom:14px;">
+          <div class="stat-box">
+            <div class="value" id="histDaily">0</div>
+            <div class="unit">支/天</div>
+            <div class="desc">平均每天</div>
+          </div>
+          <div class="stat-box">
+            <div class="value" id="histYears">0</div>
+            <div class="unit">年</div>
+            <div class="desc">吸烟年限</div>
+          </div>
+          <div class="stat-box" style="grid-column: span 2;">
+            <div class="value" id="histTotal">¥0</div>
+            <div class="unit">元</div>
+            <div class="desc">总花费</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--gray-500);line-height:1.6;background:var(--pink-50);padding:12px;border-radius:10px;">
+          💡 你已累计吸烟 <strong style="color:var(--pink-600);" id="histTotalCigs">0</strong> 支，
+          相当于 <strong style="color:var(--pink-600);" id="histPackEquiv">0</strong> 包烟。
+          <br>这些钱可以买 <strong style="color:var(--pink-600);" id="histEquiv">0</strong> 杯咖啡 ☕
+        </div>
+      </div>
+      <div id="historyEmpty" style="text-align:center;padding:20px;color:var(--gray-400);font-size:13px;">
+        请先在「我」页面中填写你的吸烟历史信息
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: var(--pink-100);">📈</span>
+        本周吸烟趋势
+      </div>
+      <div class="bar-chart" id="weeklyChart">
+        <div class="bar-item">
+          <div class="bar" style="height:60%;background:var(--pink-300);"></div>
+          <div class="bar-label">周一</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:80%;background:var(--pink-400);"></div>
+          <div class="bar-label">周二</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:40%;background:var(--pink-300);"></div>
+          <div class="bar-label">周三</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:20%;background:var(--green-400);"></div>
+          <div class="bar-label">周四</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:30%;background:var(--pink-300);"></div>
+          <div class="bar-label">周五</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:10%;background:var(--green-400);"></div>
+          <div class="bar-label">周六</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:5%;background:var(--green-500);"></div>
+          <div class="bar-label">周日</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--gray-400);margin-top:8px;">📉 趋势正在向好！</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: var(--pink-100);">📝</span>
+        每日记录
+      </div>
+      <table class="history-table">
+        <thead>
+          <tr><th>日期</th><th>吸烟</th><th>花费</th><th>状态</th></tr>
+        </thead>
+        <tbody id="historyTableBody">
+          <tr><td>6/19</td><td>0支</td><td>¥0</td><td><span class="smoke-badge badge-low">✅ 完美</span></td></tr>
+          <tr><td>6/18</td><td>1支</td><td>¥5</td><td><span class="smoke-badge badge-mid">⚠️ 注意</span></td></tr>
+          <tr><td>6/17</td><td>3支</td><td>¥15</td><td><span class="smoke-badge badge-mid">⚠️ 注意</span></td></tr>
+          <tr><td>6/16</td><td>0支</td><td>¥0</td><td><span class="smoke-badge badge-low">✅ 完美</span></td></tr>
+          <tr><td>6/15</td><td>5支</td><td>¥25</td><td><span class="smoke-badge badge-high">❌ 超标</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== TRACK PAGE ==================== -->
+  <div class="page-content" id="page-track">
+    <div class="day-counter" style="background:linear-gradient(135deg, #4ADE80, #16A34A);">
+      <div class="days" id="trackDays">0</div>
+      <div class="label">天 · 打卡坚持中</div>
+    </div>
+
+    <!-- Goal Section -->
+    <div id="goalSection">
+      <div id="goalActive" class="hidden">
+        <div class="goal-congrats" id="goalCongrats">
+          🎉 恭喜！目标已达成！快去购买你心仪的物品吧！
+        </div>
+        <div class="goal-card">
+          <div class="goal-header">
+            <div class="goal-name" id="goalName">🎁 买新电脑</div>
+            <button class="goal-edit" onclick="editGoal()">✏️ 修改</button>
+          </div>
+          <div class="goal-target" id="goalTarget">目标金额：¥0</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="goalProgressBar" style="width:0%;"></div>
+          </div>
+          <div class="progress-labels">
+            <span class="saved" id="goalSaved">已攒：¥0</span>
+            <span class="remain" id="goalRemain">还差：¥0</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="goalForm" class="goal-form">
+        <div class="card-title" style="margin-bottom:14px;">
+          <span class="icon" style="background:var(--pink-100);">🎯</span>
+          设置戒烟目标奖励
+        </div>
+        <p style="font-size:12px;color:var(--gray-400);margin-bottom:14px;">省下的烟钱用来买什么？设置一个目标，让戒烟更有动力！</p>
+        <div class="form-group">
+          <label class="form-label">🎁 目标名称</label>
+          <input type="text" class="form-input" id="inputGoalName" placeholder="例如：买一台MacBook">
+        </div>
+        <div class="form-group">
+          <label class="form-label">💰 目标金额（元）</label>
+          <input type="number" class="form-input" id="inputGoalAmount" placeholder="例如：8000">
+        </div>
+        <button class="btn-primary" onclick="saveGoal()">🎯 设定目标</button>
+      </div>
+    </div>
+
+    <!-- Today's Check-in -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: var(--pink-100);">🎯</span>
+        今日打卡
+      </div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">今天抽了几支烟？</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px;">
+          <button onclick="adjustCigarettes(-1)" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--pink-300);background:white;font-size:20px;cursor:pointer;color:var(--pink-500);">−</button>
+          <span id="cigaretteCount" style="font-size:36px;font-weight:700;color:var(--pink-600);min-width:60px;text-align:center;">0</span>
+          <button onclick="adjustCigarettes(1)" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--pink-300);background:white;font-size:20px;cursor:pointer;color:var(--pink-500);">+</button>
+        </div>
+        <p style="font-size:12px;color:var(--gray-400);">支（0 = 今天完全没吸！）</p>
+      </div>
+      <button class="btn-primary" onclick="submitCheckin()">✅ 提交今日打卡</button>
+    </div>
+
+    <!-- Achievements -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon" style="background: #FEF3C7;">🏆</span>
+        成就徽章
+      </div>
+      <div class="achievement">
+        <div class="icon">🌟</div>
+        <div class="info"><div class="name">第一天</div><div class="desc">成功完成第一次打卡</div></div>
+      </div>
+      <div class="achievement">
+        <div class="icon">🔥</div>
+        <div class="info"><div class="name">3天坚持</div><div class="desc">连续三天没有吸烟</div></div>
+      </div>
+      <div class="achievement" style="opacity:0.5;">
+        <div class="icon">💎</div>
+        <div class="info"><div class="name">一周达人</div><div class="desc">连续七天没有吸烟（未解锁）</div></div>
+      </div>
+      <div class="achievement" style="opacity:0.5;">
+        <div class="icon">👑</div>
+        <div class="info"><div class="name">一月功臣</div><div class="desc">连续30天没有吸烟（未解锁）</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ME PAGE ==================== -->
+  <div class="page-content" id="page-me">
+    <!-- Me Header -->
+    <div class="me-header">
+      <div id="meLoggedOut">
+        <div class="me-login-prompt" onclick="openLoginOverlay()">
+          <div class="me-avatar">😊</div>
+          <div class="me-login-btn">点击登录 · 开启戒烟之旅</div>
+        </div>
+      </div>
+      <div id="meLoggedIn" style="display:none;">
+        <div class="me-user-row" onclick="openAccountPage()">
+          <div class="me-avatar" id="meAvatar">😊</div>
+          <div class="me-user-info">
+            <div class="me-user-name" id="meUserName">用户</div>
+            <div class="me-user-desc" id="meUserDesc">点击查看账户详情</div>
+          </div>
+          <div class="me-arrow">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Me Body -->
+    <div style="padding: 0 20px 100px; overflow-y: auto;">
+      <!-- Quit History Settings -->
+      <div class="me-section-title">戒烟设置</div>
+      <div class="card" style="padding: 0 18px;">
+        <!-- Smoking History -->
+        <div class="me-cell" onclick="meCalculateHistory()">
+          <div class="me-cell-icon" style="background: var(--pink-50);">📝</div>
+          <div class="me-cell-text">吸烟历史信息</div>
+          <div class="me-cell-desc" id="meHistoryDesc">未填写</div>
+          <div class="me-cell-arrow">›</div>
+        </div>
+        <!-- History Input (expandable) -->
+        <div id="meHistoryForm" style="display:none;padding: 0 0 16px;border-bottom:1px solid var(--pink-100);">
+          <div class="form-group" style="margin-top:10px;">
+            <label class="form-label">🚬 每天吸多少支烟？</label>
+            <input type="number" class="form-input" id="inputDaily" placeholder="例如：10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">💰 一包烟多少钱？（20支/包）</label>
+            <input type="number" class="form-input" id="inputPrice" placeholder="例如：25">
+          </div>
+          <div class="form-group">
+            <label class="form-label">📅 已经吸烟多少年？</label>
+            <input type="number" class="form-input" id="inputYears" placeholder="例如：5">
+          </div>
+          <button class="btn-primary" onclick="calculateHistory()" style="margin-top:4px;">📊 查看我的吸烟总结</button>
+        </div>
+        <!-- History Result -->
+        <div id="meHistoryResult" style="display:none;padding: 14px 0;border-bottom:1px solid var(--pink-100);">
+          <div style="background:var(--pink-50);border-radius:12px;padding:14px;margin-bottom:10px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:var(--pink-600);" id="resDaily">0</div>
+                <div style="font-size:11px;color:var(--gray-500);">支/天</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:var(--pink-600);" id="resYears">0</div>
+                <div style="font-size:11px;color:var(--gray-500);">年</div>
+              </div>
+              <div style="text-align:center;grid-column:span 2;">
+                <div style="font-size:24px;font-weight:700;color:var(--pink-700);" id="resTotal">¥0</div>
+                <div style="font-size:11px;color:var(--gray-500);">累计花费（元）</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" style="font-size:14px;padding:12px;" onclick="startQuit()">🚭 正式启动戒烟计划！</button>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="me-cell" onclick="toggleNotifSettings()">
+          <div class="me-cell-icon" style="background: #FEF3C7;">⏰</div>
+          <div class="me-cell-text">提醒设置</div>
+          <div class="me-cell-desc" id="meTimerDesc">每2小时</div>
+          <div class="me-cell-arrow">›</div>
+        </div>
+        <div id="meNotifSettings" style="display:none;padding: 0 0 16px;border-bottom:1px solid var(--pink-100);">
+          <div class="timer-options" style="margin-top:10px;">
+            <div class="timer-opt" onclick="selectTimer(this, 1)"><div class="timer-val">1</div><div>小时</div></div>
+            <div class="timer-opt selected" onclick="selectTimer(this, 2)"><div class="timer-val">2</div><div>小时</div></div>
+            <div class="timer-opt" onclick="selectTimer(this, 4)"><div class="timer-val">4</div><div>小时</div></div>
+            <div class="timer-opt" onclick="selectTimer(this, 6)"><div class="timer-val">6</div><div>小时</div></div>
+            <div class="timer-opt" onclick="selectTimer(this, 8)"><div class="timer-val">8</div><div>小时</div></div>
+            <div class="timer-opt" onclick="selectTimer(this, 12)"><div class="timer-val">12</div><div>小时</div></div>
+          </div>
+          <button class="btn-primary" style="font-size:14px;padding:12px;" onclick="saveTimer()">✅ 保存提醒设置</button>
+          <div style="margin-top:12px;">
+            <button class="btn-secondary" onclick="triggerNotification()">🔔 测试提醒弹窗</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other -->
+      <div class="me-section-title">其他</div>
+      <div class="card" style="padding: 0 18px;">
+        <div class="me-cell">
+          <div class="me-cell-icon" style="background: var(--pink-50);">📊</div>
+          <div class="me-cell-text">数据导出</div>
+          <div class="me-cell-desc">导出戒烟记录</div>
+          <div class="me-cell-arrow">›</div>
+        </div>
+        <div class="me-cell">
+          <div class="me-cell-icon" style="background: var(--pink-50);">❓</div>
+          <div class="me-cell-text">帮助与反馈</div>
+          <div class="me-cell-desc">遇到问题？</div>
+          <div class="me-cell-arrow">›</div>
+        </div>
+        <div class="me-cell">
+          <div class="me-cell-icon" style="background: var(--pink-50);">ℹ️</div>
+          <div class="me-cell-text">关于</div>
+          <div class="me-cell-desc">v1.0.0</div>
+          <div class="me-cell-arrow">›</div>
+        </div>
+      </div>
+
+      <!-- Logout -->
+      <div id="meLogoutWrap" style="display:none;margin-top:8px;">
+        <button class="btn-secondary" style="color:var(--red-500);border-color:var(--red-400);" onclick="logout()">🚪 退出登录</button>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ==================== ACCOUNT DETAIL PAGE ==================== -->
+  <div class="account-page" id="accountPage">
+    <div class="account-header">
+      <button class="account-back" onclick="closeAccountPage()">‹</button>
+      <div class="account-header-title">账户信息</div>
+    </div>
+    <div class="account-body">
+      <!-- Avatar -->
+      <div class="account-avatar-section">
+        <div class="account-avatar" id="accountAvatar">😊</div>
+        <div class="account-username" id="accountUsername">用户</div>
+        <div class="account-login-type" id="accountLoginType">手机号登录</div>
+      </div>
+
+      <!-- Bind Phone -->
+      <div class="account-section-title">绑定管理</div>
+      <div class="account-cell">
+        <div class="account-cell-icon" style="background: var(--pink-50);">📱</div>
+        <div class="account-cell-info">
+          <div class="account-cell-label">绑定手机号</div>
+          <div class="account-cell-value" id="bindPhoneValue">未绑定</div>
+        </div>
+        <button class="account-cell-action bind" id="bindPhoneBtn" onclick="bindPhone()">绑定</button>
+      </div>
+      <div class="account-cell">
+        <div class="account-cell-icon" style="background: #E0F2FE;">📧</div>
+        <div class="account-cell-info">
+          <div class="account-cell-label">绑定邮箱</div>
+          <div class="account-cell-value" id="bindEmailValue">未绑定</div>
+        </div>
+        <button class="account-cell-action bind" id="bindEmailBtn" onclick="bindEmail()">绑定</button>
+      </div>
+      <div class="account-cell">
+        <div class="account-cell-icon" style="background: #D1FAE5;">💬</div>
+        <div class="account-cell-info">
+          <div class="account-cell-label">绑定微信</div>
+          <div class="account-cell-value" id="bindWechatValue">未绑定</div>
+        </div>
+        <button class="account-cell-action bind" id="bindWechatBtn" onclick="bindWechat()">绑定</button>
+      </div>
+
+      <!-- Password -->
+      <div class="account-section-title">安全设置</div>
+      <div class="account-cell">
+        <div class="account-cell-icon" style="background: #FEF3C7;">🔐</div>
+        <div class="account-cell-info">
+          <div class="account-cell-label">修改密码</div>
+          <div class="account-cell-value">定期修改密码更安全</div>
+        </div>
+        <button class="account-cell-action bind" onclick="showToast('修改密码功能开发中～')">修改</button>
+      </div>
+
+      <button class="account-logout-btn" onclick="logout()">🚪 退出登录</button>
+      <div style="height:30px;"></div>
+    </div>
+  </div>
+
+  <!-- ==================== BOTTOM NAV ==================== -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('home', this)">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">首页</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('history', this)">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">回顾</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('track', this)">
+      <span class="nav-icon">✅</span>
+      <span class="nav-label">打卡</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('me', this)">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">我</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LOGIN OVERLAY ==================== -->
+<div class="login-overlay hidden" id="loginOverlay">
+  <div class="login-logo">🚭</div>
+  <div class="login-title">戒烟助手</div>
+  <div class="login-sub">每一次坚持，都是给自己最好的礼物</div>
+
+  <div class="login-tabs">
+    <div class="login-tab active" onclick="switchLoginTab('phone')">📱 手机号登录</div>
+    <div class="login-tab" onclick="switchLoginTab('wechat')">💬 微信登录</div>
+  </div>
+
+  <div class="login-form" id="phoneLoginForm">
+    <div class="form-group">
+      <label class="form-label">📱 手机号码</label>
+      <input type="tel" class="form-input" id="loginPhone" placeholder="请输入11位手机号" maxlength="11">
+    </div>
+    <div class="form-group">
+      <label class="form-label">🔐 验证码</label>
+      <div class="sms-row">
+        <input type="tel" class="form-input" id="loginCode" placeholder="请输入验证码" maxlength="6">
+        <div class="sms-btn" id="smsBtn" onclick="sendSMS()">发送验证码</div>
+      </div>
+    </div>
+    <button class="login-btn" onclick="phoneLogin()">🚭 登录 / 注册</button>
+  </div>
+
+  <div class="login-form hidden" id="wechatLoginForm">
+    <div style="text-align:center;padding:30px 0;">
+      <div style="font-size:64px;margin-bottom:16px;">💚</div>
+      <p style="font-size:14px;color:var(--gray-500);margin-bottom:8px;">使用微信账号快速登录</p>
+      <p style="font-size:12px;color:var(--gray-400);">安全便捷，无需记忆密码</p>
+    </div>
+    <button class="wechat-btn" onclick="wechatLogin()">
+      <span style="font-size:20px;">💬</span> 微信授权登录
+    </button>
+  </div>
+
+  <div class="login-divider"><span>戒烟助手 · 助力健康生活</span></div>
+  <div style="font-size:11px;color:var(--gray-300);text-align:center;line-height:1.6;">
+    登录即代表同意《用户协议》和《隐私政策》<br>
+    你的数据仅用于戒烟跟踪，不会被共享
+  </div>
+  <div style="margin-top:16px;">
+    <button style="background:none;border:none;color:var(--gray-400);font-size:13px;cursor:pointer;" onclick="closeLoginOverlay()">暂不登录，随便看看 ›</button>
+  </div>
+</div>
+
+<!-- ==================== FORCE LOGIN MODAL ==================== -->
+<div class="force-login-modal" id="forceLoginModal">
+  <div class="force-login-content">
+    <div class="force-login-emoji">🔒</div>
+    <div class="force-login-title">需要登录后才能操作</div>
+    <div class="force-login-desc">填写吸烟历史、启动戒烟计划等功能需要登录账户，登录后数据会安全保存在云端。</div>
+    <div class="force-login-btns">
+      <button class="force-login-cancel" onclick="closeForceLogin()">暂不</button>
+      <button class="force-login-go" onclick="goForceLogin()">去登录</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Bubble -->
+<div class="notif-bubble" id="notifBubble">
+  <div class="notif-title">🚭 戒烟提醒</div>
+  <div class="notif-body">嘿！过去 <span id="notifInterval">2</span> 小时里，你抽了几支烟？</div>
+  <input type="number" class="notif-input" id="notifInput" value="0" min="0">
+  <div class="notif-btns">
+    <button class="notif-cancel" onclick="closeNotif()">取消</button>
+    <button class="notif-confirm" onclick="submitNotif()">提交</button>
+  </div>
+</div>
+
+<!-- Encouragement Popup -->
+<div class="encourage-popup" id="encouragePopup">
+  <div class="encourage-content">
+    <div class="encourage-emoji" id="encourageEmoji">🎉</div>
+    <div class="encourage-text" id="encourageText">太棒了！你一根都没抽！</div>
+    <div class="encourage-sub" id="encourageSub">每一次拒绝，都是对健康的投资</div>
+    <button class="encourage-close" onclick="closeEncourage()">继续加油 💪</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ==================== STATE ====================
+  let state = {
+    loggedIn: false,
+    loginType: '',
+    phone: '',
+    email: '',
+    wechatBound: false,
+    dailyCigs: 0,
+    packPrice: 0,
+    yearsSmoking: 0,
+    quitStartDate: null,
+    timerInterval: 2,
+    todayCigs: 0,
+    totalSaved: 0,
+    goalName: '',
+    goalAmount: 0,
+  };
+
+  // Load state
+  try {
+    const saved = localStorage.getItem('smokefree_state');
+    if (saved) state = { ...state, ...JSON.parse(saved) };
+  } catch(e) {}
+
+  function saveState() {
+    try { localStorage.setItem('smokefree_state', JSON.stringify(state)); } catch(e) {}
+  }
+
+  // ==================== LOGIN OVERLAY ====================
+  function openLoginOverlay() {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+  }
+  function closeLoginOverlay() {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    // Clear form
+    document.getElementById('loginPhone').value = '';
+    document.getElementById('loginCode').value = '';
+  }
+
+  function switchLoginTab(type) {
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    if (type === 'phone') {
+      document.querySelectorAll('.login-tab')[0].classList.add('active');
+      document.getElementById('phoneLoginForm').classList.remove('hidden');
+      document.getElementById('wechatLoginForm').classList.add('hidden');
+    } else {
+      document.querySelectorAll('.login-tab')[1].classList.add('active');
+      document.getElementById('phoneLoginForm').classList.add('hidden');
+      document.getElementById('wechatLoginForm').classList.remove('hidden');
+    }
+  }
+
+  function sendSMS() {
+    const phone = document.getElementById('loginPhone').value.trim();
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      showToast('请输入正确的手机号');
+      return;
+    }
+    const btn = document.getElementById('smsBtn');
+    btn.classList.add('disabled');
+    btn.textContent = '60s后重发';
+    let sec = 60;
+    const timer = setInterval(() => {
+      sec--;
+      btn.textContent = sec + 's后重发';
+      if (sec <= 0) {
+        clearInterval(timer);
+        btn.classList.remove('disabled');
+        btn.textContent = '发送验证码';
+      }
+    }, 1000);
+    showToast('验证码已发送（模拟：123456）');
+  }
+
+  function phoneLogin() {
+    const phone = document.getElementById('loginPhone').value.trim();
+    const code = document.getElementById('loginCode').value.trim();
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      showToast('请输入正确的手机号');
+      return;
+    }
+    if (!/^\d{4,6}$/.test(code)) {
+      showToast('请输入正确的验证码');
+      return;
+    }
+    state.loggedIn = true;
+    state.loginType = 'phone';
+    state.phone = phone;
+    saveState();
+    onLoginSuccess();
+  }
+
+  function wechatLogin() {
+    state.loggedIn = true;
+    state.loginType = 'wechat';
+    state.phone = '';
+    saveState();
+    onLoginSuccess();
+  }
+
+  function onLoginSuccess() {
+    closeLoginOverlay();
+    updateMePage();
+    updateAccountPage();
+    showToast('🎉 登录成功！欢迎回来');
+  }
+
+  function logout() {
+    state.loggedIn = false;
+    state.loginType = '';
+    state.phone = '';
+    state.email = '';
+    state.wechatBound = false;
+    saveState();
+    closeAccountPage();
+    updateMePage();
+    showToast('已退出登录');
+  }
+
+  // ==================== FORCE LOGIN CHECK ====================
+  function checkLoginRequired(actionName) {
+    if (state.loggedIn) return true;
+    document.getElementById('forceLoginModal').classList.add('show');
+    return false;
+  }
+  function closeForceLogin() {
+    document.getElementById('forceLoginModal').classList.remove('show');
+  }
+  function goForceLogin() {
+    document.getElementById('forceLoginModal').classList.remove('show');
+    openLoginOverlay();
+  }
+
+  // ==================== ME PAGE ====================
+  function updateMePage() {
+    const loggedOut = document.getElementById('meLoggedOut');
+    const loggedIn = document.getElementById('meLoggedIn');
+    const logoutWrap = document.getElementById('meLogoutWrap');
+
+    if (state.loggedIn) {
+      loggedOut.style.display = 'none';
+      loggedIn.style.display = 'block';
+      logoutWrap.style.display = 'block';
+
+      if (state.loginType === 'phone') {
+        const displayPhone = state.phone ? state.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '手机号用户';
+        document.getElementById('meUserName').textContent = displayPhone;
+        document.getElementById('meUserDesc').textContent = '手机号登录 · 点击查看详情';
+        // Update bind phone display
+        document.getElementById('bindPhoneValue').textContent = displayPhone;
+        document.getElementById('bindPhoneBtn').textContent = '已绑定';
+        document.getElementById('bindPhoneBtn').className = 'account-cell-action bound';
+        document.getElementById('bindPhoneBtn').onclick = null;
+      } else {
+        document.getElementById('meUserName').textContent = '微信用户';
+        document.getElementById('meUserDesc').textContent = '微信登录 · 点击查看详情';
+        document.getElementById('bindWechatValue').textContent = '已绑定微信';
+        document.getElementById('bindWechatBtn').textContent = '已绑定';
+        document.getElementById('bindWechatBtn').className = 'account-cell-action bound';
+        document.getElementById('bindWechatBtn').onclick = null;
+      }
+    } else {
+      loggedOut.style.display = 'block';
+      loggedIn.style.display = 'none';
+      logoutWrap.style.display = 'none';
+    }
+
+    // Update history desc
+    if (state.dailyCigs > 0) {
+      document.getElementById('meHistoryDesc').textContent = state.dailyCigs + '支/天 · ' + state.yearsSmoking + '年';
+    }
+    // Update timer desc
+    document.getElementById('meTimerDesc').textContent = '每' + state.timerInterval + '小时';
+  }
+
+  // Toggle history form
+  function meCalculateHistory() {
+    if (!checkLoginRequired()) return;
+    const form = document.getElementById('meHistoryForm');
+    const result = document.getElementById('meHistoryResult');
+    if (result.style.display === 'block') {
+      // Already showing result, just scroll to it
+      form.style.display = 'none';
+      result.style.display = 'none';
+      return;
+    }
+    form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    result.style.display = 'none';
+    // Pre-fill
+    document.getElementById('inputDaily').value = state.dailyCigs || '';
+    document.getElementById('inputPrice').value = state.packPrice || '';
+    document.getElementById('inputYears').value = state.yearsSmoking || '';
+  }
+
+  // Toggle notification settings
+  function toggleNotifSettings() {
+    const ns = document.getElementById('meNotifSettings');
+    ns.style.display = ns.style.display === 'block' ? 'none' : 'block';
+  }
+
+  // ==================== ACCOUNT PAGE ====================
+  function openAccountPage() {
+    if (!state.loggedIn) {
+      openLoginOverlay();
+      return;
+    }
+    updateAccountPage();
+    document.getElementById('accountPage').classList.add('show');
+  }
+  function closeAccountPage() {
+    document.getElementById('accountPage').classList.remove('show');
+  }
+  function updateAccountPage() {
+    if (state.loginType === 'phone') {
+      const displayPhone = state.phone ? state.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '';
+      document.getElementById('accountUsername').textContent = displayPhone;
+      document.getElementById('accountLoginType').textContent = '手机号登录';
+      document.getElementById('accountAvatar').textContent = '😊';
+      document.getElementById('bindPhoneValue').textContent = displayPhone;
+      document.getElementById('bindPhoneBtn').textContent = '已绑定';
+      document.getElementById('bindPhoneBtn').className = 'account-cell-action bound';
+      document.getElementById('bindPhoneBtn').onclick = null;
+    } else {
+      document.getElementById('accountUsername').textContent = '微信用户';
+      document.getElementById('accountLoginType').textContent = '微信登录';
+      document.getElementById('accountAvatar').textContent = '💚';
+      document.getElementById('bindWechatValue').textContent = '已绑定微信';
+      document.getElementById('bindWechatBtn').textContent = '已绑定';
+      document.getElementById('bindWechatBtn').className = 'account-cell-action bound';
+      document.getElementById('bindWechatBtn').onclick = null;
+    }
+    // Email
+    if (state.email) {
+      document.getElementById('bindEmailValue').textContent = state.email;
+      document.getElementById('bindEmailBtn').textContent = '已绑定';
+      document.getElementById('bindEmailBtn').className = 'account-cell-action bound';
+      document.getElementById('bindEmailBtn').onclick = null;
+    }
+  }
+
+  // Bind functions (simulated)
+  function bindPhone() {
+    showToast('绑定手机号功能开发中～');
+  }
+  function bindEmail() {
+    const email = prompt('请输入邮箱地址：');
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      state.email = email;
+      saveState();
+      updateAccountPage();
+      updateMePage();
+      showToast('邮箱绑定成功！');
+    } else if (email) {
+      showToast('邮箱格式不正确');
+    }
+  }
+  function bindWechat() {
+    showToast('绑定微信功能开发中～');
+  }
+
+  // ==================== HISTORY ====================
+  function calculateHistory() {
+    if (!checkLoginRequired()) return;
+    const daily = parseInt(document.getElementById('inputDaily').value) || 0;
+    const price = parseFloat(document.getElementById('inputPrice').value) || 0;
+    const years = parseInt(document.getElementById('inputYears').value) || 0;
+    if (daily === 0 || price === 0 || years === 0) {
+      showToast('请填写完整信息哦～');
+      return;
+    }
+    state.dailyCigs = daily;
+    state.packPrice = price;
+    state.yearsSmoking = years;
+    saveState();
+
+    const totalCigs = daily * 365 * years;
+    const totalMoney = Math.round(totalCigs / 20 * price);
+    const monthlySave = Math.round(daily / 20 * price * 30);
+    const yearlySave = Math.round(daily / 20 * price * 365);
+
+    document.getElementById('resDaily').textContent = daily;
+    document.getElementById('resYears').textContent = years;
+    document.getElementById('resTotal').textContent = '¥' + totalMoney.toLocaleString();
+
+    // Hide form, show result in me page
+    document.getElementById('meHistoryForm').style.display = 'none';
+    document.getElementById('meHistoryResult').style.display = 'block';
+    document.getElementById('meHistoryDesc').textContent = daily + '支/天 · ' + years + '年';
+
+    // Also update history page
+    document.getElementById('histDaily').textContent = daily;
+    document.getElementById('histYears').textContent = years;
+    document.getElementById('histTotal').textContent = '¥' + totalMoney.toLocaleString();
+    document.getElementById('histTotalCigs').textContent = totalCigs.toLocaleString();
+    document.getElementById('histPackEquiv').textContent = Math.round(totalCigs / 20).toLocaleString();
+    document.getElementById('histEquiv').textContent = Math.round(totalMoney / 30).toLocaleString();
+    document.getElementById('historySummary').style.display = 'block';
+    document.getElementById('historyEmpty').style.display = 'none';
+
+    showToast('已保存你的吸烟历史 📊');
+  }
+
+  function startQuit() {
+    if (!checkLoginRequired()) return;
+    state.quitStartDate = new Date().toISOString();
+    state.todayCigs = 0;
+    saveState();
+    updateHomeStats();
+    showToast('🚭 戒烟计划已启动！加油！');
+  }
+
+  // ==================== TIMER ====================
+  function selectTimer(el, hours) {
+    document.querySelectorAll('.timer-opt').forEach(t => t.classList.remove('selected'));
+    el.classList.add('selected');
+    state.timerInterval = hours;
+    document.getElementById('timerLabel').textContent = hours;
+    // Also update me page desc
+    document.getElementById('meTimerDesc').textContent = '每' + hours + '小时';
+  }
+  function saveTimer() {
+    saveState();
+    showToast('✅ 提醒设置已保存，每 ' + state.timerInterval + ' 小时提醒一次');
+  }
+
+  // ==================== NOTIFICATION ====================
+  function triggerNotification() {
+    document.getElementById('notifInterval').textContent = state.timerInterval;
+    document.getElementById('notifBubble').classList.add('show');
+  }
+  function closeNotif() {
+    document.getElementById('notifBubble').classList.remove('show');
+  }
+  function submitNotif() {
+    const count = parseInt(document.getElementById('notifInput').value) || 0;
+    document.getElementById('notifBubble').classList.remove('show');
+    if (count === 0) {
+      showEncouragement();
+    } else {
+      showToast('记录了 ' + count + ' 支烟，别灰心，下次一定可以！');
+    }
+    state.todayCigs += count;
+    saveState();
+    updateHomeStats();
+    updateGoalDisplay();
+  }
+
+  // ==================== ENCOURAGEMENT ====================
+  const encouragements = [
+    { emoji: '🎉', text: '太棒了！你一根都没抽！', sub: '每一次拒绝，都是对健康的投资' },
+    { emoji: '💪', text: '坚持就是胜利！你做得很棒！', sub: '身体正在悄悄变好' },
+    { emoji: '🌟', text: '零吸烟，完美的记录！', sub: '为自己骄傲吧' },
+    { emoji: '🏆', text: '你是自律的冠军！', sub: '继续这张完美的成绩单' },
+    { emoji: '💚', text: '你的肺正在感谢你！', sub: '每一次呼吸都更轻松' },
+  ];
+  function showEncouragement() {
+    const e = encouragements[Math.floor(Math.random() * encouragements.length)];
+    document.getElementById('encourageEmoji').textContent = e.emoji;
+    document.getElementById('encourageText').textContent = e.text;
+    document.getElementById('encourageSub').textContent = e.sub;
+    document.getElementById('encouragePopup').classList.add('show');
+  }
+  function closeEncourage() {
+    document.getElementById('encouragePopup').classList.remove('show');
+  }
+
+  // ==================== QUICK RECORD ====================
+  function quickRecord(count) {
+    if (count === 0) {
+      showEncouragement();
+    } else {
+      showToast('记录了 ' + count + ' 支，没关系，继续加油！');
+    }
+    state.todayCigs += count;
+    saveState();
+    updateHomeStats();
+    updateGoalDisplay();
+  }
+  function quickRecordPrompt() {
+    document.getElementById('notifBubble').classList.add('show');
+  }
+
+  // ==================== CIGARETTE COUNTER ====================
+  function adjustCigarettes(delta) {
+    let val = parseInt(document.getElementById('cigaretteCount').textContent) || 0;
+    val = Math.max(0, val + delta);
+    document.getElementById('cigaretteCount').textContent = val;
+  }
+  function submitCheckin() {
+    const count = parseInt(document.getElementById('cigaretteCount').textContent) || 0;
+    state.todayCigs = count;
+    saveState();
+    if (count === 0) {
+      showEncouragement();
+    } else {
+      showToast('打卡成功！今天抽了 ' + count + ' 支，明天继续加油！');
+    }
+    updateHomeStats();
+    updateGoalDisplay();
+  }
+
+  // ==================== GOAL ====================
+  function saveGoal() {
+    const name = document.getElementById('inputGoalName').value.trim();
+    const amount = parseFloat(document.getElementById('inputGoalAmount').value) || 0;
+    if (!name || amount <= 0) {
+      showToast('请填写完整目标信息～');
+      return;
+    }
+    state.goalName = name;
+    state.goalAmount = amount;
+    saveState();
+    updateGoalDisplay();
+    showToast('🎯 目标已设定！加油攒钱！');
+  }
+  function editGoal() {
+    document.getElementById('goalActive').classList.add('hidden');
+    document.getElementById('goalForm').classList.remove('hidden');
+    document.getElementById('inputGoalName').value = state.goalName;
+    document.getElementById('inputGoalAmount').value = state.goalAmount;
+  }
+  function updateGoalDisplay() {
+    if (!state.goalName || state.goalAmount <= 0) {
+      document.getElementById('goalActive').classList.add('hidden');
+      document.getElementById('goalForm').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('goalActive').classList.remove('hidden');
+    document.getElementById('goalForm').classList.add('hidden');
+
+    const days = state.quitStartDate ? Math.floor((new Date() - new Date(state.quitStartDate)) / (1000*60*60*24)) : 0;
+    const cigsPerDay = state.dailyCigs || 10;
+    const pricePerCig = (state.packPrice || 25) / 20;
+    const saved = Math.round(days * cigsPerDay * pricePerCig);
+    const progress = Math.min(100, Math.round(saved / state.goalAmount * 100));
+    const remain = Math.max(0, state.goalAmount - saved);
+
+    document.getElementById('goalName').textContent = '🎁 ' + state.goalName;
+    document.getElementById('goalTarget').textContent = '目标金额：¥' + state.goalAmount.toLocaleString();
+    document.getElementById('goalSaved').textContent = '已攒：¥' + saved.toLocaleString();
+    document.getElementById('goalRemain').textContent = '还差：¥' + remain.toLocaleString();
+    document.getElementById('goalProgressBar').style.width = progress + '%';
+
+    const bar = document.getElementById('goalProgressBar');
+    const congrats = document.getElementById('goalCongrats');
+    if (saved >= state.goalAmount) {
+      bar.classList.add('complete');
+      congrats.classList.add('show');
+    } else {
+      bar.classList.remove('complete');
+      congrats.classList.remove('show');
+    }
+  }
+
+  // ==================== STATS ====================
+  function updateHomeStats() {
+    const days = state.quitStartDate ? Math.floor((new Date() - new Date(state.quitStartDate)) / (1000*60*60*24)) : 0;
+    const cigsPerDay = state.dailyCigs || 10;
+    const pricePerCig = (state.packPrice || 25) / 20;
+    const saved = Math.round(days * cigsPerDay * pricePerCig);
+    const healthPct = Math.min(100, Math.round(days / 365 * 100));
+
+    const daysEl = document.getElementById('homeDays');
+    if (daysEl) daysEl.textContent = days;
+    const hDays = document.getElementById('headerDays');
+    if (hDays) hDays.textContent = days;
+    const hMoney = document.getElementById('headerMoney');
+    if (hMoney) hMoney.textContent = '¥' + saved.toLocaleString();
+    const tDays = document.getElementById('trackDays');
+    if (tDays) tDays.textContent = days;
+    const todayEl = document.getElementById('todaySmoked');
+    if (todayEl) todayEl.textContent = state.todayCigs;
+    const wastedEl = document.getElementById('todayWasted');
+    if (wastedEl) wastedEl.textContent = '¥' + Math.round(state.todayCigs * pricePerCig);
+    const totalEl = document.getElementById('totalSaved');
+    if (totalEl) totalEl.textContent = '¥' + saved.toLocaleString();
+    const healthEl = document.getElementById('healthScore');
+    if (healthEl) healthEl.textContent = healthPct + '%';
+  }
+
+  // ==================== TAB SWITCHING ====================
+  function switchTab(tab, navEl) {
+    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + tab).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (navEl) navEl.classList.add('active');
+
+    // Update header text
+    const header = document.getElementById('appHeader');
+    const titles = {
+      'home': { h1: '🚭 戒烟助手', p: '每一次坚持，都是给自己最好的礼物' },
+      'history': { h1: '📊 吸烟回顾', p: '看看你一路走来的变化' },
+      'track': { h1: '✅ 每日打卡', p: '记录每一天，见证改变' },
+      'me': { h1: '👤 我的', p: '管理你的戒烟之旅' },
+    };
+    if (titles[tab]) {
+      header.querySelector('h1').textContent = titles[tab].h1;
+      header.querySelector('p').textContent = titles[tab].p;
+    }
+
+    if (tab === 'track') updateGoalDisplay();
+    if (tab === 'me') updateMePage();
+  }
+
+  // ==================== TOAST ====================
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ==================== CLOCK ====================
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes().toString().padStart(2, '0');
+    const el = document.getElementById('currentTime');
+    if (el) el.textContent = h + ':' + m;
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // ==================== MOTIVATIONAL QUOTES ====================
+  const quotes = [
+    '「种一棵树最好的时间是十年前，其次是现在。」',
+    '「每一次拒绝香烟，都是给未来自己的一份礼物。」',
+    '「你比香烟更强大，相信自己！」',
+    '「坚持一天，就是胜利；坚持一生，就是奇迹。」',
+    '「今天的坚持，是明天健康的基石。」',
+  ];
+  let quoteIdx = 0;
+  setInterval(() => {
+    quoteIdx = (quoteIdx + 1) % quotes.length;
+    const el = document.getElementById('motivationText');
+    if (el) el.textContent = quotes[quoteIdx];
+  }, 8000);
+
+  // ==================== INIT ====================
+  updateHomeStats();
+  updateGoalDisplay();
+  updateMePage();
+</script>
+</body>
+</html>
